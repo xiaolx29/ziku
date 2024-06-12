@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
+from tkinter.font import Font
 from PIL import ImageTk, Image
 import utils
 
@@ -17,8 +18,10 @@ def ziku_display_update():
 root = tk.Tk()
 root.title('字库工具')
 root.geometry('800x400')
+myFont = Font(size=20)
+custom_font = Font(family = 'fonts/kaiti', size = 20)
 
-ziku_import_button = tk.Button(master = root, text = '导入字库', command = import_ziku_file)
+ziku_import_button = tk.Button(master = root, text = '导入字库', font = custom_font, command = import_ziku_file)
 ziku_import_button.grid(row = 0, column = 0)
 
 ziku_filename_value = tk.StringVar(value = '还未导入字库')
