@@ -25,17 +25,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('字库工具')
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 800, 400)
 
-        self.dock_widget = QtWidgets.QDockWidget('Dockable Window')
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.dock_widget)
-
-        widget = QtWidgets.QWidget()
-        # self.setCentralWidget(central_widget)
-        self.dock_widget.setWidget(widget)
+        central_widget = QtWidgets.QWidget()
+        self.setCentralWidget(central_widget)
 
         layout = QtWidgets.QGridLayout()
-        widget.setLayout(layout)
+        central_widget.setLayout(layout)
 
         self.file_import_button = QtWidgets.QPushButton('导入字库文件')
         layout.addWidget(self.file_import_button, 0, 0)
@@ -51,13 +47,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.page_control_spinbox.valueChanged.connect(self.change_page)
 
         self.font_browse_label = ClickableLabel()
-        self.font_browse_label.setAlignment(QtCore.Qt.AlignTop)
+        self.font_browse_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         layout.addWidget(self.font_browse_label, 1, 0, 1, 3)
         self.font_browse_label.clicked.connect(self.font_browse_label_onclick)
 
         self.char_display_label = QtWidgets.QLabel()
-        self.font_browse_label.setAlignment(QtCore.Qt.AlignTop)
+        self.char_display_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
         layout.addWidget(self.char_display_label, 2, 0)
+
+        self.neima_display_label = QtWidgets.QLabel()
+        self.neima_display_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        layout.addWidget(self.neima_display_label, 2, 1)
+
+        self.quweima_display_label = QtWidgets.QLabel()
+        self.quweima_display_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+        layout.addWidget(self.quweima_display_label, 2, 2)
 
     @QtCore.Slot()
     def file_import_button_onclick(self) -> None:
@@ -78,11 +82,14 @@ class MainWindow(QtWidgets.QMainWindow):
     def font_browse_label_onclick(self, pos: QtCore.QPoint) -> None:
         page_index = self.page_control_spinbox.value()
         char_no = (page_index - 1) * 1000 + (pos.y() // 16 * 50+ pos.x() // 16)
-        high_byte, low_byte = 0xA1 + char_no // 94, 0xA1 + char_no % 94
-        gb2312_bytes = bytes([high_byte, low_byte])
+        qu, wei = char_no // 94 + 1, char_no % 94 + 1
+        # high_byte, low_byte = 0xA1 + char_no // 94, 0xA1 + char_no % 94
+        gb2312_bytes = bytes([0xA0 + qu, 0xA0 + wei])
         char = gb2312_bytes.decode(encoding = 'gb2312', errors = 'replace')
-        number = binascii.hexlify(gb2312_bytes).decode('ascii').upper()
-        self.char_display_label.setText(f'{char} {number}')
+        jineima = binascii.hexlify(gb2312_bytes).decode('ascii').upper()
+        self.char_display_label.setText(f'字符：{char}')
+        self.neima_display_label.setText(f'机内码：0x{jineima}')
+        self.quweima_display_label.setText(f'区位码：{qu:02d}{wei:02d}')
 
     @QtCore.Slot(int)
     def change_page(self, page_index: int) -> None:
