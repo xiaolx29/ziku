@@ -1,5 +1,4 @@
-from PySide6 import QtCore, QtWidgets, QtGui
-from PIL import Image, ImageQt
+from PySide6 import QtCore, QtWidgets
 import utils
 
 class FontTable(QtWidgets.QTableWidget):
@@ -13,11 +12,9 @@ class FontTable(QtWidgets.QTableWidget):
         self.verticalHeader().setMinimumSectionSize(0)
 
     def value_update(self, page: int, filename: str) -> None:
-        for i in range(1000):
-            char_image = Image.new(mode = '1', size = (self.char_size, self.char_size), color = 255)
-            utils.draw_character(filename = filename, img = char_image, position = (0, 0), character_index = (page - 1) * 1000 + i)
-            pixmap = QtGui.QPixmap.fromImage(ImageQt.ImageQt(char_image))
-            self.table_labels[i // 50][i % 50].setPixmap(pixmap)
+        for i in range(self.rowCount() * self.columnCount()):
+            pixmap = utils.draw_character_on_pixmap(filename = filename, character_index = (page - 1) * self.rowCount() * self.columnCount() + i)
+            self.table_labels[i // self.columnCount()][i % self.columnCount()].setPixmap(pixmap)
     
     def structure_update(self, char_size, row_count, column_count):
         self.char_size: int = char_size
