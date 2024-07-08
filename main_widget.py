@@ -46,6 +46,7 @@ class MainWidget(QtWidgets.QWidget):
             self.table.value_update(page = 1, filename = filename)
             # enable page control spinbox
             self.page_control_spinbox.setEnabled(True)
+            self.page_control_spinbox.setValue(1)
 
     @QtCore.Slot(int, int)
     def on_cell_clicked(self, row: int, column: int) -> None:
