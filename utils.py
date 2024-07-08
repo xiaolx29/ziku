@@ -1,5 +1,3 @@
-import binascii
-import codecs
 from PIL import Image, ImageDraw, ImageQt
 from PySide6 import QtGui
 
@@ -10,7 +8,7 @@ def charid_to_quweima(charid: int) -> tuple[int, int]:
     return charid // 94 + 1, charid % 94 + 1
 
 def quweima_to_jineima(qu: int, wei: int) -> bytes:
-    return bytes[0xa0 + qu, 0xa0 + wei]
+    return bytes([0xa0 + qu, 0xa0 + wei])
 
 def jineima_to_quweima(jineima: bytes) -> tuple[int, int]:
     high_byte, low_byte = jineima
@@ -23,40 +21,27 @@ def jineima_to_char(jineima: bytes, errors: str) -> str:
 def char_to_jineima(char: str, errors: str) -> bytes:
     return char.encode(encoding = 'gb2312', errors = errors)
 
-def get_character(filename: str, character_index: int) -> bytes:
+def read_char_pixels_from_file(filename: str, charid: int) -> bytes:
     # read one character from binary font file
     with open(filename, 'rb') as file:
-        file.seek(32 * character_index)
+        file.seek(32 * charid)
         character_data = file.read(32)
     return character_data
 
-def draw_character_on_pixmap(filename: str, character_index: int) -> QtGui.QPixmap:
+def write_char_pixels_to_file(filename: str, charid: int, char_pixels: bytes) -> None:
+    with open(filename, 'rb+') as file:
+        file.seek(32 * charid)
+        file.write(char_pixels)
+
+def draw_char_pixels_on_pixmap(filename: str, charid: int) -> QtGui.QPixmap:
     # draw one character
     image = Image.new(mode = '1', size = (16, 16), color = 255)
     # position_x, position_y = position
     draw = ImageDraw.Draw(image)
-    character_data = get_character(filename = filename, character_index = character_index)
+    character_data = read_char_pixels_from_file(filename = filename, charid = charid)
     for y in range(16):
         line_data = int.from_bytes(bytes = character_data[y * 2: y * 2 + 2])
         for x in range(16):
             if (line_data >> (15 - x)) & 1:
                 draw.point(xy = (x, y), fill = 'black')
     return QtGui.QPixmap.fromImage(ImageQt.ImageQt(image))
-
-def get_charinfo_by_charid(charid: int):
-    qu, wei = charid // 94 + 1, charid % 94 + 1
-    jineima = bytes([0xA0 + qu, 0xA0 + wei])
-    char = jineima.decode(encoding = 'gb2312', errors = 'replace')
-    return char, f'{int.from_bytes(jineima):#X}', f'{qu:02d} {wei:02d}'
-
-def get_charid_by_char(char: str):
-    try:
-        jineima = char_to_jineima(char)
-        # detect half-width characters, they are not in gb2312
-        if len(jineima) != 2:
-            return None
-        jineima_high, jineima_low = jineima
-        return (jineima_high - 0xA1) * 94 + jineima_low - 0xA1
-    # detect other characters that are also not in gb2312
-    except UnicodeEncodeError:
-        return None

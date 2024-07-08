@@ -1,5 +1,6 @@
 from PySide6 import QtCore, QtWidgets
-import utils, font_table
+import char_browse_table, page_control_spinbox, char_info_zone
+
 
 class MainWidget(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -7,83 +8,59 @@ class MainWidget(QtWidgets.QWidget):
 
         # init widgets
         self.file_import_button = QtWidgets.QPushButton('导入字库文件')
-        self.filename_label = QtWidgets.QLabel('')
-        self.page_control_spinbox = QtWidgets.QSpinBox()
-        self.page_control_spinbox.setMinimum(1)
-        self.page_control_spinbox.setEnabled(False)
-        self.page_control_spinbox.setPrefix('第 ')
-        self.page_control_spinbox.setSuffix(' 页')
-        self.table = font_table.FontTable()
-        self.char_display_label = QtWidgets.QLabel()
-        self.neima_display_label = QtWidgets.QLabel()
-        self.quweima_display_label = QtWidgets.QLabel()
+        self.filename_label = QtWidgets.QLabel()
+        self.page_control_spinbox = page_control_spinbox.PageControlSpinbox()
+        self.table = char_browse_table.CharBrowseTable()
+        self.char_info_zone = char_info_zone.CharInfoZone()
 
         # set connections
-        self.file_import_button.clicked.connect(self.on_file_import_button_clicked)
-        self.page_control_spinbox.valueChanged.connect(self.on_page_changed)
+        self.file_import_button.clicked.connect(self.import_file)
+        self.page_control_spinbox.valueChanged.connect(self.table_value_update)
         self.table.cellClicked.connect(self.on_cell_clicked)
 
         # set layout
-        sub_layout_1 = QtWidgets.QHBoxLayout()
-        sub_layout_1.addWidget(self.file_import_button)
-        sub_layout_1.addWidget(self.filename_label)
-        sub_layout_1.addWidget(self.page_control_spinbox)
-        sub_layout_2 = QtWidgets.QHBoxLayout()
-        sub_layout_2.addWidget(self.char_display_label)
-        sub_layout_2.addWidget(self.neima_display_label)
-        sub_layout_2.addWidget(self.quweima_display_label)
-        main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addLayout(sub_layout_1)
-        main_layout.addWidget(self.table)
-        main_layout.addLayout(sub_layout_2)
-        self.setLayout(main_layout)
+        hbox_layout = QtWidgets.QHBoxLayout()
+        hbox_layout.addWidget(self.file_import_button)
+        hbox_layout.addWidget(self.filename_label)
+        hbox_layout.addWidget(self.page_control_spinbox)
+        self.setLayout(QtWidgets.QVBoxLayout())
+        self.layout().addLayout(hbox_layout)
+        self.layout().addWidget(self.table)
+        self.layout().addLayout(self.char_info_zone)
+    
+    @QtCore.Slot()
+    def table_value_update(self):
+        page = self.page_control_spinbox.value()
+        filename = self.filename_label.text()
+        self.table.value_update(page = page, filename = filename)
 
     @QtCore.Slot()
-    def on_file_import_button_clicked(self) -> None:
+    def import_file(self) -> None:
         # get name of the font file
         filename, _ = QtWidgets.QFileDialog.getOpenFileName()
         if filename:  # if user has chosen a font file (not cancelled)
-            self.parent().filename = filename  # record its name
-            print(filename)
-            print(self.parent().filename)
-            # and display it in the filename label
-            self.filename_label.setText(self.parent().filename)
-            # draw the first page of font file
+            # display the filename string in filenanem label
+            self.filename_label.setText(filename)
+            # draw the first page of font file on font table
             self.table.structure_update(char_size = 16, row_count = 20, column_count = 50)
             self.table.value_update(page = 1, filename = filename)
             # enable page control spinbox
             self.page_control_spinbox.setEnabled(True)
 
-    @QtCore.Slot(int)
-    def on_page_changed(self, page: int) -> None:
-        self.table.value_update(page = page, filename = self.parent().filename)
-
-    def display_charinfo(self, charid:int) -> None:
-        char, jineima, quweima = utils.get_charinfo_by_charid(charid = charid)
-        self.char_display_label.setText(f'字符：{char}')
-        self.neima_display_label.setText(f'机内码：{jineima}')
-        self.quweima_display_label.setText(f'区位码：{quweima}')
-
     @QtCore.Slot(int, int)
     def on_cell_clicked(self, row: int, column: int) -> None:
-        if not self.parent().filename:
-            return
         page = self.page_control_spinbox.value() - 1
-        row_count, column_count = self.table.rowCount(), self.table.columnCount()
-        charid = (page * row_count + row) * column_count + column
-        self.display_charinfo(charid = charid)
+        charid = self.table.position_to_charid(page_index = page, row_index = row, column_index = column)
+        self.char_info_zone.display_charinfo(charid = charid)
     
-    def locate_char_in_table(self, charid: int):
-        row_count, column_count = self.table.rowCount(), self.table.columnCount()
-        page, row, column = charid // (row_count * column_count), charid % (row_count * column_count) // column_count, charid % column_count
+    def after_search(self, charid: int):
+        # show char info
+        self.char_info_zone.display_charinfo(charid = charid)
+        if not self.filename_label.text():
+            return
+        # get the position of the char
+        page, row, column = self.table.charid_to_position(charid = charid)
+        # jump to the page that contains the char
         self.page_control_spinbox.setValue(page + 1)
+        # locate the char in the table
         self.table.setCurrentCell(row, column)
-    
-    @QtCore.Slot(int, int)
-    def on_cell_double_clicked(self, row: int, column: int) -> None:
-        if not self.parent().filename:
-            return
-        print(row, column)
-        page = self.page_control_spinbox.value() - 1
-        row_count, column_count = self.table.rowCount(), self.table.columnCount()
-        charid = (page * row_count + row) * column_count + column
