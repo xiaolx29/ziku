@@ -49,11 +49,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def open_edit_window(self, row, column):
         if not (filename := self.centralWidget().filename_label.text()):
             return
-        self.char_edit_window.show()
-        # print(row, column)
         page = self.centralWidget().page_control_spinbox.value() - 1
         row_count, column_count = self.centralWidget().table.rowCount(), self.centralWidget().table.columnCount()
         charid = (page * row_count + row) * column_count + column
+        if charid >= 94 * 94:
+            return
+        self.char_edit_window.show()
         char_pixels = utils.read_char_pixels_from_file(filename = filename, charid = charid)
         self.char_edit_window.char_update(filename = self.centralWidget().filename_label.text(), charid = charid, char_pixels = char_pixels)
 

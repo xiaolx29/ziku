@@ -1,4 +1,4 @@
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets, QtGui
 import utils
 
 
@@ -19,7 +19,11 @@ class CharBrowseTable(QtWidgets.QTableWidget):
     def value_update(self, page: int, filename: str) -> None:
         for cell_index in range(self.rowCount() * self.columnCount()):
             charid = (page - 1) * self.rowCount() * self.columnCount() + cell_index
-            pixmap = utils.draw_char_pixels_on_pixmap(filename = filename, charid = charid)
+            if charid >= 94 * 94:
+                pixmap = QtGui.QPixmap(16, 16)
+                pixmap.fill(QtGui.QColor.fromString('#C8C8C8'))
+            else:
+                pixmap = utils.draw_char_pixels_on_pixmap(filename = filename, charid = charid)
             row_index, column_index = cell_index // self.columnCount(), cell_index % self.columnCount()
             cell_label: QtWidgets.QLabel = self.cellWidget(row_index, column_index)
             cell_label.setPixmap(pixmap)

@@ -1,3 +1,4 @@
+import math
 from PySide6 import QtCore, QtWidgets
 import char_browse_table, page_control_spinbox, char_info_zone
 
@@ -42,11 +43,14 @@ class MainWidget(QtWidgets.QWidget):
             # display the filename string in filenanem label
             self.filename_label.setText(filename)
             # draw the first page of font file on font table
-            self.table.structure_update(char_size = 16, row_count = 20, column_count = 50)
+            row_count, column_count = 20, 50
+            self.table.structure_update(char_size = 16, row_count = row_count, column_count = column_count)
             self.table.value_update(page = 1, filename = filename)
             # enable page control spinbox
             self.page_control_spinbox.setEnabled(True)
             self.page_control_spinbox.setValue(1)
+            max_page = math.ceil(94 * 94 / (row_count * column_count))
+            self.page_control_spinbox.setMaximum(max_page)
 
     @QtCore.Slot(int, int)
     def on_cell_clicked(self, row: int, column: int) -> None:
