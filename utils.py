@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw, ImageQt
-from PySide6 import QtGui
+from PySide6 import QtGui, QtCore
 
 def quweima_to_charid(qu: int, wei: int) -> int:
     return (qu - 1) * 94 + wei - 1
@@ -35,7 +35,7 @@ def write_char_pixels_to_file(filename: str, charid: int, char_pixels: bytes) ->
 
 def draw_char_pixels_on_pixmap(filename: str, charid: int) -> QtGui.QPixmap:
     # draw one character
-    image = Image.new(mode = '1', size = (16, 16), color = 255)
+    image = Image.new(mode = 'L', size = (16, 16), color = 255)
     # position_x, position_y = position
     draw = ImageDraw.Draw(image)
     character_data = read_char_pixels_from_file(filename = filename, charid = charid)
