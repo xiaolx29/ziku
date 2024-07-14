@@ -1,5 +1,5 @@
 from PIL import Image, ImageDraw, ImageQt
-from PySide6 import QtGui, QtCore
+from PySide6 import QtGui
 
 def quweima_to_charid(qu: int, wei: int) -> int:
     return (qu - 1) * 94 + wei - 1
