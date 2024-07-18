@@ -23,7 +23,7 @@ class CharBrowseTable(QtWidgets.QTableWidget):
                 pixmap = QtGui.QPixmap(16, 16)
                 pixmap.fill(QtGui.QColor.fromString('#C8C8C8'))
             else:
-                pixmap = utils.draw_char_pixels_on_pixmap(filename = filename, charid = charid)
+                pixmap = utils.char_list_to_pixmap(char_list = utils.char_bytes_to_list(char_bytes = utils.read_char_pixels_from_file(filename = filename, charid = charid, char_byte_num = 32), char_size = 16))
             row_index, column_index = cell_index // self.columnCount(), cell_index % self.columnCount()
             cell_label: QtWidgets.QLabel = self.cellWidget(row_index, column_index)
             cell_label.setPixmap(pixmap)

@@ -55,7 +55,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if charid >= 94 * 94:
             return
         self.char_edit_window.show()
-        char_pixels = utils.read_char_pixels_from_file(filename = filename, charid = charid)
+        char_pixels = utils.read_char_pixels_from_file(filename = filename, charid = charid, char_byte_num = 32)
         self.char_edit_window.char_update(filename = self.centralWidget().filename_label.text(), charid = charid, char_pixels = char_pixels)
 
 if __name__ == '__main__':
