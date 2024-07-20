@@ -1,6 +1,10 @@
 import sys
+from typing import Final
 from PySide6 import QtWidgets, QtGui, QtCore
 import utils, main_widget, char_edit_widget, char_searcher
+
+
+WEI_COUNT: Final = 94
 
 class MainWindow(QtWidgets.QMainWindow):
     filename = None
@@ -11,11 +15,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setGeometry(100, 100, 800, 400)
 
         self.char_edit_window = char_edit_widget.CharEditWidget()
-        self.setCentralWidget(main_widget.MainWidget(parent = self))
+        self.main_widget = main_widget.MainWidget(parent = self)
+        self.setCentralWidget(self.main_widget)
         self.setMenuBar(QtWidgets.QMenuBar(self))
 
         self.file_import_action = QtGui.QAction('导入字库')
-        self.file_import_action.triggered.connect(self.centralWidget().import_file)
+        self.file_import_action.triggered.connect(self.main_widget.import_file)
         file_menu = self.menuBar().addMenu('文件')
         file_menu.addAction(self.file_import_action)
 
@@ -33,8 +38,8 @@ class MainWindow(QtWidgets.QMainWindow):
         about_menu = self.menuBar().addMenu('关于')
         about_menu.addActions([self.about_me_action, self.about_qt_action])
 
-        self.centralWidget().table.cellDoubleClicked.connect(self.open_edit_window)
-        self.char_edit_window.char_pixel_updated.connect(self.centralWidget().table_value_update)
+        self.main_widget.table.cellDoubleClicked.connect(self.open_edit_window)
+        self.char_edit_window.char_pixel_updated.connect(self.main_widget.table_value_update)
 
     def about_me(self):
         QtWidgets.QMessageBox.about(self, '关于 我', 'xiaolx')
@@ -43,20 +48,20 @@ class MainWindow(QtWidgets.QMainWindow):
         if not (charid := char_searcher.CharSearcher().run()):
             return
         # after searching, do 1: show char info and 2: locate the char in the table
-        self.centralWidget().after_search(charid = charid)
+        self.main_widget.after_search(charid = charid)
     
     @QtCore.Slot(int, int)
     def open_edit_window(self, row, column):
-        if not (filename := self.centralWidget().filename_label.text()):
+        if not (filename := self.main_widget.filename_label.text()):
             return
-        page = self.centralWidget().page_control_spinbox.value() - 1
-        row_count, column_count = self.centralWidget().table.rowCount(), self.centralWidget().table.columnCount()
-        charid = (page * row_count + row) * column_count + column
-        if charid >= 94 * 94:
+        qu_index = self.main_widget.qu_control_spinbox.value()
+        wei_index = self.main_widget.table.position_to_weiid(row_index = row, column_index = column)
+        charid = utils.quweima_to_charid(qu = qu_index, wei = wei_index)
+        if wei_index > WEI_COUNT:
             return
         self.char_edit_window.show()
         char_pixels = utils.read_char_pixels_from_file(filename = filename, charid = charid, char_byte_num = 32)
-        self.char_edit_window.char_update(filename = self.centralWidget().filename_label.text(), charid = charid, char_pixels = char_pixels)
+        self.char_edit_window.char_update(filename = self.main_widget.filename_label.text(), charid = charid, char_pixels = char_pixels)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

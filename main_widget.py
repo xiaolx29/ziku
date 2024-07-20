@@ -1,7 +1,10 @@
 import math
+from typing import Final
 from PySide6 import QtCore, QtWidgets
-import char_browse_table, page_control_spinbox, char_info_zone
+import qu_table, qu_control_spinbox, char_info_zone
 
+QU_COUNT: Final = 94
+WEI_COUNT: Final = 94
 
 class MainWidget(QtWidgets.QWidget):
     def __init__(self, parent):
@@ -10,30 +13,31 @@ class MainWidget(QtWidgets.QWidget):
         # init widgets
         self.file_import_button = QtWidgets.QPushButton('导入字库文件')
         self.filename_label = QtWidgets.QLabel()
-        self.page_control_spinbox = page_control_spinbox.PageControlSpinbox()
-        self.table = char_browse_table.CharBrowseTable()
+        self.qu_control_spinbox = qu_control_spinbox.QuControlSpinbox()
+        self.table = qu_table.QuTable()
         self.char_info_zone = char_info_zone.CharInfoZone()
 
         # set connections
         self.file_import_button.clicked.connect(self.import_file)
-        self.page_control_spinbox.valueChanged.connect(self.table_value_update)
+        self.qu_control_spinbox.valueChanged.connect(self.table_value_update)
         self.table.cellClicked.connect(self.on_cell_clicked)
 
         # set layout
         hbox_layout = QtWidgets.QHBoxLayout()
         hbox_layout.addWidget(self.file_import_button)
         hbox_layout.addWidget(self.filename_label)
-        hbox_layout.addWidget(self.page_control_spinbox)
-        self.setLayout(QtWidgets.QVBoxLayout())
-        self.layout().addLayout(hbox_layout)
-        self.layout().addWidget(self.table)
-        self.layout().addLayout(self.char_info_zone)
+        hbox_layout.addWidget(self.qu_control_spinbox)
+        vbox_layout = QtWidgets.QVBoxLayout()
+        self.setLayout(vbox_layout)
+        vbox_layout.addLayout(hbox_layout)
+        vbox_layout.addWidget(self.table)
+        vbox_layout.addLayout(self.char_info_zone)
     
     @QtCore.Slot()
     def table_value_update(self):
-        page = self.page_control_spinbox.value()
+        qu_index = self.qu_control_spinbox.value()
         filename = self.filename_label.text()
-        self.table.value_update(page = page, filename = filename)
+        self.table.value_update(filename = filename, qu_index = qu_index, char_size = 16)
 
     @QtCore.Slot()
     def import_file(self) -> None:
@@ -43,20 +47,17 @@ class MainWidget(QtWidgets.QWidget):
             # display the filename string in filenanem label
             self.filename_label.setText(filename)
             # draw the first page of font file on font table
-            row_count, column_count = 20, 50
+            row_count, column_count = 5, 20
             self.table.structure_update(char_size = 16, row_count = row_count, column_count = column_count)
-            self.table.value_update(page = 1, filename = filename)
-            # enable page control spinbox
-            self.page_control_spinbox.setEnabled(True)
-            self.page_control_spinbox.setValue(1)
-            max_page = math.ceil(94 * 94 / (row_count * column_count))
-            self.page_control_spinbox.setMaximum(max_page)
+            self.table.value_update(filename = filename, qu_index = 1, char_size = 16)
+            # set qu control spibox enabled and value = 1
+            self.qu_control_spinbox.on_file_import()
 
     @QtCore.Slot(int, int)
     def on_cell_clicked(self, row: int, column: int) -> None:
-        page = self.page_control_spinbox.value() - 1
-        charid = self.table.position_to_charid(page_index = page, row_index = row, column_index = column)
-        self.char_info_zone.display_charinfo(charid = charid)
+        qu_index = self.qu_control_spinbox.value()
+        wei_index = self.table.position_to_weiid(row_index = row, column_index = column)
+        self.char_info_zone.display_charinfo(qu_index = qu_index, wei_index = wei_index)
     
     def after_search(self, charid: int):
         # show char info

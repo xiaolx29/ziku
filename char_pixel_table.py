@@ -1,6 +1,8 @@
 from functools import partial
 from PySide6 import QtWidgets, QtGui, QtCore
 
+CELL_SIZE = 30
+
 class CharPixelTable(QtWidgets.QTableWidget):
     on_clicked_color_strategy_dict = {
         '#000000': '#ff0000',
@@ -9,24 +11,31 @@ class CharPixelTable(QtWidgets.QTableWidget):
         '#ffffff': '#00ff00',
     }
 
-    def __init__(self):
+    def __init__(self, char_size):
         super().__init__()
-        self.setRowCount(16)
-        self.setColumnCount(16)
+        self.char_size = char_size
+        self.setRowCount(char_size)
+        self.setColumnCount(char_size)
 
-        for cell_index in range(16 * 16):
-            row_index, column_index = cell_index // 16, cell_index % 16
+        # add QTableWidgetItem to each cell
+        for cell_index in range(char_size ** 2):
+            row_index, column_index = divmod(cell_index, char_size)
             cell_item = QtWidgets.QTableWidgetItem()
+            # disable user interaction with item
             cell_item.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)
             self.setItem(row_index, column_index, cell_item)
 
-        for row_index in range(16):
-            self.setRowHeight(row_index, 30)
-        for column_index in range(16):
-            self.setColumnWidth(column_index, 30)
-        self.setFixedWidth(16 * 30 + self.verticalHeader().width() + self.frameWidth() * 2)
-        self.setFixedHeight(16 * 30 + self.horizontalHeader().height() + self.frameWidth() * 2)
+        # set row height and column width
+        for row_index in range(char_size):
+            self.setRowHeight(row_index, CELL_SIZE)
+        for column_index in range(char_size):
+            self.setColumnWidth(column_index, CELL_SIZE)
+
+        self.setFixedWidth(char_size * CELL_SIZE + self.verticalHeader().width() + self.frameWidth() * 2)
+        self.setFixedHeight(char_size * CELL_SIZE + self.horizontalHeader().height() + self.frameWidth() * 2)
+        # disable user selection of cells
         self.setSelectionMode(QtWidgets.QTableWidget.SelectionMode.NoSelection)
+        # cell clicked -> cell color update
         self.cellClicked.connect(partial(self.cell_color_update, self.on_clicked_color_strategy_dict))
 
     def cell_color_update(self, color_strategy_dict: dict[str, str], row_index: int, column_index: int) -> None:

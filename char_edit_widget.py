@@ -7,7 +7,7 @@ class CharEditWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         # init widgets
-        self.table = char_pixel_table.CharPixelTable()
+        self.table = char_pixel_table.CharPixelTable(char_size = 16)
         self.clear_button = QtWidgets.QPushButton('清空')
         self.reset_button = QtWidgets.QPushButton('还原')
         self.save_button = QtWidgets.QPushButton('存储')
