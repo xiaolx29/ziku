@@ -29,7 +29,6 @@ def read_char_pixels_from_file(filename: str, charid: int, char_size: int) -> by
     # read one character from binary ziku file
     char_byte_num: int = 2 * char_size if char_size <= 16 else char_size ** 2 // 8
     with open(filename, 'rb') as file:
-        print(char_size)
         file.seek(charid * char_byte_num)
         char_bytes = file.read(char_byte_num)
     return char_bytes
