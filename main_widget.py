@@ -63,12 +63,14 @@ class MainWidget(QtWidgets.QWidget):
     
     def after_search(self, charid: int):
         # show char info
-        self.char_info_zone.display_charinfo(charid = charid)
+        qu_index, wei_index = utils.charid_to_quweima(charid = charid)
+        self.char_info_zone.display_charinfo(qu_index = qu_index, wei_index = wei_index)
         if not self.filename_label.text():
             return
         # get the position of the char
-        page, row, column = self.table.charid_to_position(charid = charid)
+        row_index, column_index = self.table.weiid_to_position(wei_index = wei_index)
+        page_index = charid // WEI_COUNT
         # jump to the page that contains the char
-        self.page_control_spinbox.setValue(page + 1)
+        self.qu_control_spinbox.setValue(page_index + 1)
         # locate the char in the table
-        self.table.setCurrentCell(row, column)
+        self.table.setCurrentCell(row_index, column_index)
