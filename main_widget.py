@@ -1,15 +1,15 @@
-import math
 from typing import Final
 from PySide6 import QtCore, QtWidgets
-import qu_table, qu_control_spinbox, char_info_zone
+import qu_table, qu_control_spinbox, char_info_zone, file_import_dialog
 
 QU_COUNT: Final = 94
 WEI_COUNT: Final = 94
 
 class MainWidget(QtWidgets.QWidget):
+
     def __init__(self, parent):
         super().__init__(parent = parent)
-
+        self.char_size = 16
         # init widgets
         self.file_import_button = QtWidgets.QPushButton('导入字库文件')
         self.filename_label = QtWidgets.QLabel()
@@ -37,21 +37,23 @@ class MainWidget(QtWidgets.QWidget):
     def table_value_update(self):
         qu_index = self.qu_control_spinbox.value()
         filename = self.filename_label.text()
-        self.table.value_update(filename = filename, qu_index = qu_index, char_size = 16)
+        self.table.value_update(filename = filename, qu_index = qu_index, char_size =self.char_size)
 
     @QtCore.Slot()
     def import_file(self) -> None:
-        # get name of the font file
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName()
-        if filename:  # if user has chosen a font file (not cancelled)
-            # display the filename string in filenanem label
-            self.filename_label.setText(filename)
-            # draw the first page of font file on font table
-            row_count, column_count = 5, 20
-            self.table.structure_update(char_size = 16, row_count = row_count, column_count = column_count)
-            self.table.value_update(filename = filename, qu_index = 1, char_size = 16)
-            # set qu control spibox enabled and value = 1
-            self.qu_control_spinbox.on_file_import()
+        self.file_import_dialog = file_import_dialog.FileImportDialog()
+        self.file_import_dialog.show()
+        # # get name of the font file
+        # filename, _ = QtWidgets.QFileDialog.getOpenFileName()
+        # if filename:  # if user has chosen a font file (not cancelled)
+        #     # display the filename string in filenanem label
+        #     self.filename_label.setText(filename)
+        #     # draw the first page of font file on font table
+        #     row_count, column_count = 5, 20
+        #     self.table.structure_update(char_size = self.char_size, row_count = row_count, column_count = column_count)
+        #     self.table.value_update(filename = filename, qu_index = 1, char_size = self.char_size)
+        #     # set qu control spibox enabled and value = 1
+        #     self.qu_control_spinbox.on_file_import()
 
     @QtCore.Slot(int, int)
     def on_cell_clicked(self, row: int, column: int) -> None:

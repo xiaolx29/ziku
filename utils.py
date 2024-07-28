@@ -25,9 +25,11 @@ def jineima_to_char(jineima: bytes, errors: str) -> str:
 def char_to_jineima(char: str, errors: str) -> bytes:
     return char.encode(encoding = 'gb2312', errors = errors)
 
-def read_char_pixels_from_file(filename: str, charid: int, char_byte_num: int) -> bytes:
+def read_char_pixels_from_file(filename: str, charid: int, char_size: int) -> bytes:
     # read one character from binary ziku file
+    char_byte_num: int = 2 * char_size if char_size <= 16 else char_size ** 2 // 8
     with open(filename, 'rb') as file:
+        print(char_size)
         file.seek(charid * char_byte_num)
         char_bytes = file.read(char_byte_num)
     return char_bytes
@@ -42,8 +44,7 @@ def write_char_pixels_to_file(filename: str, charid: int, char_pixels: bytes) ->
 def draw_char_pixels_on_pixmap(filename: str, charid: int, char_size: int) -> QtGui.QPixmap:
     # draw one character
     # read data of the char from binary ziku file
-    char_byte_num: int = 2 * char_size if char_size <= 16 else char_size ** 2 / 8
-    char_bytes: bytes = read_char_pixels_from_file(filename = filename, charid = charid, char_byte_num = char_byte_num)
+    char_bytes: bytes = read_char_pixels_from_file(filename = filename, charid = charid, char_size = char_size)
     # create a pure black image with size=char_size * char_size
     image: Image = Image.new(mode = '1', size = (char_size, char_size), color = 255)
     draw: ImageDraw = ImageDraw.Draw(image)

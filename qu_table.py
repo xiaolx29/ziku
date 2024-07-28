@@ -25,7 +25,7 @@ class QuTable(QtWidgets.QTableWidget):
                 pixmap.fill(QtGui.QColor.fromString('#C8C8C8'))
             else:  # non-empty cell
                 charid: int = utils.quweima_to_charid(qu = qu_index, wei = wei_index)
-                char_pixels: bytes = utils.read_char_pixels_from_file(filename = filename, charid = charid, char_byte_num = 32)
+                char_pixels: bytes = utils.read_char_pixels_from_file(filename = filename, charid = charid, char_size = char_size)
                 char_list: list[list[bool]] = utils.char_bytes_to_list(char_bytes = char_pixels, char_size = char_size)
                 pixmap: QtGui.QPixmap = utils.char_list_to_pixmap(char_list= char_list)
             row_index, column_index = self.weiid_to_position(wei_index)

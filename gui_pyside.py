@@ -1,3 +1,4 @@
+from functools import partial
 import sys
 from typing import Final
 from PySide6 import QtWidgets, QtGui, QtCore
@@ -31,6 +32,17 @@ class MainWindow(QtWidgets.QMainWindow):
         search_menu = self.menuBar().addMenu('搜索')
         search_menu.addAction(self.search_by_char_action)
 
+        setting_menu = self.menuBar().addMenu('设置')
+        set_char_size_menu = setting_menu.addMenu('设置字号')
+        self.set_char_group = QtGui.QActionGroup(self)
+        self.set_char_group.setExclusive(True)
+        for char_size in [12, 14, 16, 24, 32, 40, 48]:
+            action = QtGui.QAction(str(char_size), self)
+            action.setCheckable(True)
+            set_char_size_menu.addAction(action)
+            self.set_char_group.addAction(action)
+            action.toggled.connect(partial(self.set_char_size, char_size))
+        
         self.about_me_action = QtGui.QAction('关于 我')
         self.about_me_action.triggered.connect(self.about_me)
         self.about_qt_action = QtGui.QAction('关于 Qt')
@@ -40,6 +52,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.main_widget.table.cellDoubleClicked.connect(self.open_edit_window)
         self.char_edit_window.char_pixel_updated.connect(self.main_widget.table_value_update)
+    
+    def set_char_size(self, char_size: int, action_checked: bool) -> None:
+        if not action_checked:
+            return
+        self.char_size = char_size
+        self.main_widget.char_size = char_size
+        self.main_widget.table.structure_update(char_size = char_size, row_count = 5, column_count = 20)
 
     def about_me(self):
         QtWidgets.QMessageBox.about(self, '关于 我', 'xiaolx')
