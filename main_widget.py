@@ -1,10 +1,6 @@
 from typing import Final
 from PySide6 import QtCore, QtWidgets
-<<<<<<< HEAD
-import qu_table, qu_control_spinbox, char_info_zone, file_import_dialog
-=======
-import utils, qu_table, qu_control_spinbox, char_info_zone
->>>>>>> 9792254602f548eebcfa249f84e5969b010eea81
+import qu_table, qu_control_spinbox, char_info_zone
 
 QU_COUNT: Final = 94
 WEI_COUNT: Final = 94
