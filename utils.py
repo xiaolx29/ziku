@@ -63,11 +63,13 @@ def draw_char_pixels_on_pixmap(filename: str, charid: int, char_size: int) -> Qt
     # return QtGui.QPixmap.fromImage(ImageQt.ImageQt(image))
     return image
 
-def char_bytes_to_list(char_bytes: bytes, char_size: int) -> list[list[bool]]:
+def char_bytes_to_list(char_bytes: bytes) -> list[list[bool]]:
     char_list: list[list[bool]] = []
-    if char_size <= 16:
-        for row_index in range(char_size):
-            row_list: list[bool] = []
+    byte_num: int = len(char_bytes)
+    char_size: int = byte_num * BYTE_SIZE // 16 if byte_num <= 32 else int((byte_num * BYTE_SIZE) ** 0.5)
+    for row_index in range(char_size):
+        row_list: list[bool] = []
+        if char_size <= 16:
             # extract data of 1 row(2 bytes) from char_bytes
             row_data: int = int.from_bytes(bytes = char_bytes[row_index * 2: row_index * 2 + 2])
             # append the first char_size bits of the 2 bytes into row_list
@@ -75,8 +77,7 @@ def char_bytes_to_list(char_bytes: bytes, char_size: int) -> list[list[bool]]:
                 pixel_data: Literal[0, 1] = row_data >> 2 * BYTE_SIZE - 1 - column_index & 1
                 row_list.append(bool(pixel_data))
             char_list.append(row_list)
-    else:
-        for row_index in range(char_size):
+        else:  # char_size > 16
             row_list: list[bool] = []
             for column_index in range(char_size):
                 pixel_index: int = row_index * char_size + column_index

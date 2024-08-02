@@ -1,71 +1,121 @@
+from enum import IntEnum
 from functools import partial
+import sys
+from typing import Final
 from PySide6 import QtWidgets, QtGui, QtCore
+import utils
 
-CELL_SIZE = 30
+CELL_SIZE: Final = 30
+
+class CellBackgroundColor(IntEnum):
+    COLOR_TRUE = 0xff000000
+    COLOR_FALSE = 0xffffffff
+    COLOR_TRUE_TO_FALSE = 0xffff0000
+    COLOR_FALSE_TO_TRUE = 0xff00ff00
+
+ColorUpdateStrategy = dict[CellBackgroundColor, CellBackgroundColor]
+
+on_clicked_strategy: ColorUpdateStrategy = {
+    CellBackgroundColor.COLOR_TRUE: CellBackgroundColor.COLOR_TRUE_TO_FALSE,
+    CellBackgroundColor.COLOR_TRUE_TO_FALSE: CellBackgroundColor.COLOR_TRUE,
+    CellBackgroundColor.COLOR_FALSE: CellBackgroundColor.COLOR_FALSE_TO_TRUE,
+    CellBackgroundColor.COLOR_FALSE_TO_TRUE: CellBackgroundColor.COLOR_FALSE,
+}
+clear_strategy: ColorUpdateStrategy = {
+    CellBackgroundColor.COLOR_TRUE: CellBackgroundColor.COLOR_TRUE_TO_FALSE,
+    CellBackgroundColor.COLOR_FALSE_TO_TRUE: CellBackgroundColor.COLOR_FALSE,
+}
+reset_strategy: ColorUpdateStrategy = {
+    CellBackgroundColor.COLOR_TRUE_TO_FALSE: CellBackgroundColor.COLOR_TRUE,
+    CellBackgroundColor.COLOR_FALSE_TO_TRUE: CellBackgroundColor.COLOR_FALSE,
+}
+save_strategy: ColorUpdateStrategy = {
+    CellBackgroundColor.COLOR_FALSE_TO_TRUE: CellBackgroundColor.COLOR_TRUE,
+    CellBackgroundColor.COLOR_TRUE_TO_FALSE: CellBackgroundColor.COLOR_FALSE,
+}
 
 class CharPixelTable(QtWidgets.QTableWidget):
-    on_clicked_color_strategy_dict = {
-        '#000000': '#ff0000',
-        '#ff0000': '#000000',
-        '#00ff00': '#ffffff',
-        '#ffffff': '#00ff00',
-    }
 
-    def __init__(self, char_size):
+    def __init__(self):
         super().__init__()
+        # disable user selection of cells
+        self.setSelectionMode(QtWidgets.QTableWidget.SelectionMode.NoSelection)
+        # deal with cellclicked signal
+        self.cellClicked.connect(partial(self.set_pixel_color, on_clicked_strategy))
+
+    def set_structure(self, char_size):
         self.char_size = char_size
         self.setRowCount(char_size)
         self.setColumnCount(char_size)
-
         # add QTableWidgetItem to each cell
         for cell_index in range(char_size ** 2):
-            row_index, column_index = divmod(cell_index, char_size)
             cell_item = QtWidgets.QTableWidgetItem()
             # disable user interaction with item
             cell_item.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)
-            self.setItem(row_index, column_index, cell_item)
-
+            self.setItem(*divmod(cell_index, char_size), cell_item)
         # set row height and column width
         for row_index in range(char_size):
             self.setRowHeight(row_index, CELL_SIZE)
         for column_index in range(char_size):
             self.setColumnWidth(column_index, CELL_SIZE)
-
+        # size of table = size of cells + size of header + size of frame * 2
         self.setFixedWidth(char_size * CELL_SIZE + self.verticalHeader().width() + self.frameWidth() * 2)
         self.setFixedHeight(char_size * CELL_SIZE + self.horizontalHeader().height() + self.frameWidth() * 2)
-        # disable user selection of cells
-        self.setSelectionMode(QtWidgets.QTableWidget.SelectionMode.NoSelection)
-        # cell clicked -> cell color update
-        self.cellClicked.connect(partial(self.cell_color_update, self.on_clicked_color_strategy_dict))
+    
+    def set_char(self, char_bytes: bytes) -> None:
+        char_list: list[list[bool]] = utils.char_bytes_to_list(char_bytes = char_bytes)
+        # 2d list -> 1d list
+        pixel_list: list[bool] = [pixel_bool for row_list in char_list for pixel_bool in row_list]
+        for pixel_index, pixel_bool in enumerate(pixel_list):
+            color: CellBackgroundColor = CellBackgroundColor.COLOR_TRUE if pixel_bool else CellBackgroundColor.COLOR_FALSE
+            self.item(*divmod(pixel_index, self.char_size)).setBackground(QtGui.QColor(color))
 
-    def cell_color_update(self, color_strategy_dict: dict[str, str], row_index: int, column_index: int) -> None:
+    def set_pixel_color(self, color_strategy: ColorUpdateStrategy, row_index: int, column_index: int) -> None:
         cell_item: QtWidgets.QTableWidgetItem = self.item(row_index, column_index)
-        old_color_name: str = cell_item.background().color().name()
-        new_color_name: str = color_strategy_dict.get(old_color_name, old_color_name)
-        cell_item.setBackground(QtGui.QColor.fromString(new_color_name))
+        curr_color: int = cell_item.background().color().rgb()
+        new_color: CellBackgroundColor = color_strategy.get(CellBackgroundColor(curr_color), CellBackgroundColor(curr_color))
+        cell_item.setBackground(QtGui.QColor(new_color))
+    
+    def set_color(self, color_strategy: ColorUpdateStrategy) -> None:
+        for pixel_index in range(self.char_size ** 2):
+            self.set_pixel_color(color_strategy, *divmod(pixel_index, self.char_size))
+    
+    def get_char(self) -> list[list[bool]]:
+        char_list = []
+        for row_index in range(self.char_size):
+            row_list = []
+            for column_index in range(self.char_size):
+                row_list.append(self.item(row_index, column_index).background().color().rgb() == CellBackgroundColor.COLOR_TRUE)
+            char_list.append(row_list)
+        return char_list
 
-    def color_update(self, color_strategy_dict: dict[str, str]) -> None:
-        for cell_index in range(16 * 16):
-            row_index, column_index = cell_index // 16, cell_index % 16
-            self.cell_color_update(color_strategy_dict = color_strategy_dict, row_index = row_index, column_index = column_index)
+    
+if __name__ == '__main__':
+    app = QtWidgets.QApplication([])
 
-    def char_update(self, char_pixels: bytes) -> None:
-        for row_index in range(16):
-            line_pixels = int.from_bytes(bytes = char_pixels[row_index * 2: row_index * 2 + 2])
-            for column_index in range(16):
-                item = self.item(row_index, column_index)
-                item.setBackground(QtGui.QColor.fromString('#000000') if line_pixels >> 15 - column_index & 1 else QtGui.QColor.fromString('#ffffff'))
+    clear_button = QtWidgets.QPushButton('clear')
+    reset_button = QtWidgets.QPushButton('reset')
+    save_button = QtWidgets.QPushButton('save')
 
-    def get_char_pixels(self) -> bytes:
-        char_pixels: list[int] = []
-        line_pixels = 0
-        for cell_index in range(16 * 16):
-            row_index, column_index = cell_index // 16, cell_index % 16
-            if self.item(row_index, column_index).background().color().name() == '#000000':
-                line_pixels = (line_pixels << 1) | 1
-            else:
-                line_pixels = line_pixels << 1
-            if cell_index % 8 == 7:
-                char_pixels.append(line_pixels)
-                line_pixels = 0
-        return bytes(char_pixels)
+    table = CharPixelTable()
+    table.set_structure(char_size = 16)
+    data = utils.read_char_pixels_from_file(filename = 'ziku_files/HZK/16/HZK16C', charid = 8, char_size = 16)
+    table.set_char(data)
+
+    clear_button.clicked.connect(lambda: table.set_color(clear_strategy))
+    reset_button.clicked.connect(lambda: table.set_color(reset_strategy))
+    save_button.clicked.connect(lambda: table.set_color(save_strategy))
+
+    layout = QtWidgets.QVBoxLayout()
+    layout.addWidget(clear_button)
+    layout.addWidget(reset_button)
+    layout.addWidget(save_button)
+    layout.addWidget(table)
+
+    widget = QtWidgets.QWidget()
+    widget.setLayout(layout)
+    widget.resize(800, 600)
+    widget.show()
+
+    sys.exit(app.exec())
+        
